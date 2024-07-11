@@ -1,15 +1,47 @@
 package com.LucasVilhena.planner.participant;
 
 
+import com.LucasVilhena.planner.trip.Trip;
+import org.hibernate.dialect.unique.CreateTableUniqueDelegate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ParticipantService {
+    @Autowired
+    private ParticipantRepository repository;
 
-    public void registerParticipantsToEvent(List<String> participantsToInvite, UUID TripId){}
+    public void registerParticipantsToEvent(List<String> participantsToInvite, Trip trip) {
+        List<Participant> participants = participantsToInvite.stream().map(email -> new Participant(email, trip)).toList();
 
-    public void triggerConfirmationEmailToParticipants(UUID tripId){};
+        this.repository.saveAll(participants);
+
+        System.out.println(participants.get(0).getId());
+    }
+
+    public ParticipantCreateResponse registerParticipantToEvent(String email, Trip trip){
+        Participant newParticipant = new Participant(email, trip);
+        this.repository.save(newParticipant);
+
+        return new ParticipantCreateResponse(newParticipant.getId());
+    }
+
+    public void triggerConfirmationEmailToParticipants(UUID tripId) {};
+
+
+    public void triggerConfirmationEmailToParticipant(String email) {};
+
+    public List<ParticipantData> getAllParticipantsFromEvent(UUID tripId) {
+        return this.repository.findByTripId(tripId).stream().map(participant -> new ParticipantData(participant.getId(),
+                participant.getName(),
+                participant.getEmail(),
+                participant.getIsConfirmed()
+        ))
+                .collect(Collectors.toList());
+    }
 }
+
